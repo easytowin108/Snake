@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🐍 | SNAKE BIT - EARN REWARDS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-deep: #0a0c15;
+            --bg-surface: #11161f;
+            --glass-card: rgba(30, 41, 59, 0.75);
+            --premium-gold-start: #fbbf24;
+            --premium-gold-end: #f59e0b;
+            --neon-green: #4ade80;
+            --neon-red: #ff4d4d;
+            --text-glow: 0 0 8px rgba(251, 191, 36, 0.6);
+            --border-glow: 0 0 12px rgba(251, 191, 36, 0.3);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at 10% 20%, #121826, #02040c);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle at 20% 40%, rgba(251, 191, 36, 0.08) 2px, transparent 2px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #statusBanner {
+            background: linear-gradient(95deg, #dc2626, #b91c1c);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 1px;
+            backdrop-filter: blur(10px);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            max-width: 500px;
+            z-index: 2000;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+            border-bottom: 1px solid #ff8a8a;
+            display: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 18px 16px 90px 16px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 5;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Fullscreen Game Overlay */
+        .fullscreen-game {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0f1a;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s, opacity 0.2s;
+        }
+        .fullscreen-game.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .fullscreen-game canvas {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            background: #0a0f1a;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            cursor: crosshair;
+        }
+        .game-overlay-stats {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(12px);
+            color: #fbbf24;
+            font-weight: bold;
+            z-index: 10001;
+            border-bottom: 1px solid rgba(251,191,36,0.3);
+        }
+        .game-overlay-stats div {
+            font-size: 16px;
+            font-weight: 800;
+        }
+        .game-overlay-stats i {
+            margin-right: 6px;
+        }
+        .exit-fullscreen-btn {
+            position: absolute;
+            top: 60px;
+            right: 16px;
+            background: #dc2626;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 18px;
+            color: white;
+            font-weight: bold;
+            z-index: 10002;
+            cursor: pointer;
+            font-size: 13px;
+            box-shadow: 0 2px 8px black;
+        }
+        .swipe-guide {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background: rgba(0,0,0,0.6);
+            padding: 10px;
+            font-size: 13px;
+            color: #fbbf24;
+            z-index: 10001;
+            font-weight: 500;
+        }
+
+        .card {
+            background: rgba(18, 25, 45, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s ease;
+        }
+
+        .btn-premium {
+            background: linear-gradient(105deg, #fbbf24, #f59e0b);
+            border: none;
+            padding: 16px 20px;
+            border-radius: 60px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            color: #0c0a1a;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
+            transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+        }
+        .btn-premium:active { transform: scale(0.97); }
+        .btn-premium:disabled {
+            background: #2d3a4e;
+            box-shadow: none;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            border-radius: 1.5rem;
+            padding: 10px 6px;
+            text-align: center;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            flex: 1;
+            margin: 0 4px;
+        }
+        .stat-box small { font-size: 10px; opacity: 0.7; letter-spacing: 0.5px; }
+        .stat-box div { font-weight: 800; font-size: 1.2rem; color: #fbbf24; text-shadow: 0 0 5px #ffb347; }
+
+        /* SMALL PREVIEW CANVAS */
+        .game-canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        #snakeCanvas {
+            background: #0a0f1a;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px -5px black;
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            cursor: pointer;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 32px);
+            max-width: 460px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 6px;
+            border-radius: 60px;
+            border: 1px solid rgba(251, 191, 36, 0.5);
+            box-shadow: 0 20px 35px -10px black;
+            z-index: 100;
+        }
+        .nav-item {
+            color: #7e8ba3;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            flex: 1;
+            cursor: pointer;
+            padding: 6px 0;
+            border-radius: 40px;
+            transition: 0.1s;
+        }
+        .nav-item i { font-size: 22px; display: block; margin-bottom: 4px; }
+        .nav-item.active { background: rgba(251, 191, 36, 0.2); color: #fbbf24; text-shadow: 0 0 3px gold; }
+
+        .prize-tag { font-size: 10px; padding: 4px 10px; border-radius: 20px; font-weight: 800; }
+        .tag-win { background: linear-gradient(145deg, #059669, #047857); color: white; box-shadow: 0 2px 6px #0a5c3e; }
+        .tag-lock { background: #1e293b; color: #94a3b8; border: 1px dashed #fbbf24; }
+
+        .leader-item {
+            background: rgba(15, 23, 42, 0.6);
+            margin: 8px 0;
+            padding: 12px 15px;
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+            border: 1px solid #334155;
+        }
+        .m-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+        .m-table th { color: #fbbf24; font-weight: 700; font-size: 12px; padding-bottom: 6px; }
+        .m-table td { padding: 12px 4px; background: #0f172a80; border-radius: 18px; }
+
+        .logout-btn {
+            background: #dc2626;
+            border-radius: 20px;
+            border: none;
+            padding: 8px 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            cursor: pointer;
+            float: right;
+        }
+        .hidden { display: none; }
+        .active-milestone { background: linear-gradient(115deg, #fbbf2410, #1e293b); border-radius: 30px; padding: 14px; border-left: 4px solid #fbbf24; }
+        .gift-card { background: linear-gradient(135deg, #065f46, #022c22); border-radius: 2rem; margin: 14px 0; padding: 20px; text-align: center; border: 1px solid #fbbf24; cursor: pointer; transition: transform 0.1s; }
+        .gift-card:active { transform: scale(0.98); }
+        .code-block { font-size: 22px; font-family: monospace; background: #00000066; border-radius: 18px; padding: 10px; margin-top: 12px; user-select: all; }
+        .copy-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #020617; font-weight: bold; padding: 8px 20px; border-radius: 60px; z-index: 3000; font-size: 14px; animation: fadeToast 1.5s ease forwards; pointer-events: none; }
+        @keyframes fadeToast { 0% { opacity: 0; transform: translateX(-50%) translateY(20px); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-15px); } }
+        .click-hint { font-size: 11px; background: #fbbf2420; display: inline-block; padding: 2px 12px; border-radius: 30px; margin-top: 6px; }
+        .guide-box {
+            background: #0f172a80;
+            border-radius: 20px;
+            padding: 10px;
+            margin-top: 14px;
+            text-align: center;
+            font-size: 12px;
+            border: 1px dashed #fbbf24;
+        }
+        .guide-box i {
+            font-size: 18px;
+            margin: 0 6px;
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+<div id="statusBanner"><i class="fas fa-skull-crosswalk"></i> SESSION LOCKED – COME BACK DURING OPEN HOURS</div>    
+
+<!-- Fullscreen Game Overlay with Swipe & Stats -->
+<div id="fullscreenGame" class="fullscreen-game">
+    <div class="game-overlay-stats">
+        <div><i class="fas fa-star"></i> SCORE: <span id="fsScore">0</span></div>
+        <div><i class="fas fa-chart-line"></i> LEVEL: <span id="fsLevel">1</span></div>
+        <div><i class="fas fa-hourglass-half"></i> TIME: <span id="fsTimer">15s</span></div>
+        <div><i class="fas fa-trophy"></i> BEST: <span id="fsHighScore">0</span></div>
+    </div>
+    <button class="exit-fullscreen-btn" id="exitFullscreenBtn"><i class="fas fa-times"></i>  EXIT</button>
+    <canvas id="fullscreenCanvas" width="320" height="320"></canvas>
+    <div class="swipe-guide">
+        <i class="fas fa-hand-peace"></i> SWIPE ← → ↑ ↓ TO CONTROL SNAKE
+    </div>
+</div>
+
+<div id="mainApp" class="container">
+    <section id="sec-click" class="tab-content">
+        <div class="card" style="position: relative;">
+            <p style="font-size: 9px; margin-top: 8px; text-align: right;"><i class="far fa-clock"></i> Session: <span id="openTimeText">--</span> - <span id="closeTimeText">--</span></p>
+            <h3 style="color:#FBBF24; text-align: center; font-size: 1.2rem;"><i class="fas fa-gamepad"></i> SNAKE BIT</h3>
+            
+            <!-- STATS ROW -->
+            <div style="display: flex; justify-content: space-between; margin: 12px 0 8px;">
+                <div class="stat-box"><small>⚔️ YOUR ID</small><div id="myUID" style="font-size:10px;">--</div></div>
+                <div class="stat-box"><small>🏆 HIGH SCORE</small><div id="myBest">0</div></div>
+            </div>
+            
+            <!-- SMALL PREVIEW CANVAS -->
+            <div class="game-canvas-wrapper">
+                <canvas id="snakeCanvas" width="180" height="180"></canvas>
+            </div>
+            
+            <button id="gameBtn" class="btn-premium"><i class="fas fa-expand-alt"></i> START FULLSCREEN GAME</button>
+            
+            <!-- CONTROL GUIDE -->
+            <div class="guide-box">
+                <i class="fas fa-arrows-alt"></i> <strong>HOW TO PLAY</strong><br>
+                🐍 After START → Fullscreen Game <br>
+                <i class="fas fa-hand-peace"></i> Swipe on screen: <i class="fas fa-arrow-left"></i> <i class="fas fa-arrow-up"></i> <i class="fas fa-arrow-down"></i> <i class="fas fa-arrow-right"></i><br>
+                <span style="font-size:10px;">✨ eat 🔴 gives +10 score & +2sec & eat 🟡 gives +50 score & +5 sec</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="sec-milestone" class="tab-content hidden">
+        <div class="card"><h3 style="color:#FBBF24;"><i class="fas fa-chart-line"></i> PRIZES & MILESTONES</h3>
+        <div id="currentStatus" class="active-milestone">🏅 Loading ...</div>
+        <table class="m-table"><thead><tr><th>👥 TARGET USERS</th><th>🏅 WINNERS</th><th>💰 REWARD (₹)</th></tr></thead><tbody id="milestoneBody"></tbody></table></div>
+    </section>
+    <section id="sec-leader" class="tab-content hidden">
+        <div class="card"><h3 style="color:#FBBF24;">🌍 GLOBAL RANKINGS</h3><div><i class="fas fa-users"></i> Total Users: <span id="totalUserCount">0</span></div><div id="leaderList" style="max-height: 430px; overflow-y: auto;"></div></div>
+    </section>
+    <section id="sec-gift" class="tab-content hidden">
+        <div class="card"><h3 style="color:#4ADE80;"><i class="fas fa-gift"></i> MY REWARDS</h3><p style="font-size:11px;">🎁 One‑click any card → copy code</p><div id="giftContainer"></div></div>
+    </section>
+</div>
+<nav class="bottom-nav" id="bottomNav">
+    <div class="nav-item active" onclick="showTab('sec-click', this)"><i class="fas fa-gamepad"></i>Play</div>
+    <div class="nav-item" onclick="showTab('sec-milestone', this)"><i class="fas fa-bullseye"></i>Roadmap</div>
+    <div class="nav-item" onclick="showTab('sec-leader', this)"><i class="fas fa-trophy"></i>Ranks</div>
+    <div class="nav-item" onclick="showTab('sec-gift', this)"><i class="fas fa-wallet"></i>Gifts</div>
+</nav>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, get, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyAqNQ8XjKDCQjTbqNs3aVBicqy0Qsc3QkM", databaseURL: "https://hello-92f11-default-rtdb.asia-southeast1.firebasedatabase.app", };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    
+    // AUTO-UID GENERATION (SNAKE_ + 10 digits)
+    let MY_ID = localStorage.getItem("permanentUID");
+    if (!MY_ID) {
+        const randomDigits = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+        MY_ID = "SNAKE_" + randomDigits;
+        localStorage.setItem("permanentUID", MY_ID);
+    }
+    
+    let ADMIN_SETTINGS = { gameDuration: 15, showLimit: 200, winAmount: 10, milestones: {100:{wins:10,price:50},250:{wins:20,price:150},500:{wins:40,price:300}}, openTime: "00:00", closeTime: "23:59" };
+    let globalBestScore = 0;
+
+    // ======================= FULLSCREEN SWIPE SNAKE ENGINE =======================
+    const fsCanvas = document.getElementById('fullscreenCanvas');
+    const fsCtx = fsCanvas.getContext('2d');
+    const grid = 16;
+    let snake, food, goldenFood, particles, score, level, timeLeft, gameActive, direction, nextDir, gameSpeed, gameLoopId, countdownInterval;
+    let snakeGameRunning = false;
+    let isFullscreenActive = false;
+    
+    fsCanvas.width = 320; fsCanvas.height = 320;
+    
+    const previewCanvas = document.getElementById('snakeCanvas');
+    const previewCtx = previewCanvas.getContext('2d');
+    function drawPreviewStatic() {
+        previewCtx.fillStyle = '#0a0f1a';
+        previewCtx.fillRect(0, 0, 180, 180);
+        previewCtx.fillStyle = '#ff0055';
+        previewCtx.beginPath(); previewCtx.arc(90, 90, 5, 0, Math.PI*2); previewCtx.fill();
+        previewCtx.fillStyle = '#1a7f4a';
+        previewCtx.fillRect(70, 70, 12, 12);
+        previewCtx.fillStyle = '#00ff88';
+        previewCtx.fillRect(82, 70, 12, 12);
+        previewCtx.fillStyle = '#fbbf24';
+        previewCtx.font = "bold 12px monospace";
+        previewCtx.fillText("SNAKE", 60, 150);
+    }
+    drawPreviewStatic();
+    
+    function initFullscreenGame() {
+        if (snakeGameRunning) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+        }
+        snakeGameRunning = true;
+        gameActive = true;
+        score = 0;
+        level = 1;
+        timeLeft = ADMIN_SETTINGS.gameDuration || 15;
+        gameSpeed = 200;
+        direction = 'RIGHT';
+        nextDir = 'RIGHT';
+        snake = [{x: 160, y: 160}, {x: 144, y: 160}, {x: 128, y: 160}];
+        particles = [];
+        food = {x: 64, y: 64};
+        goldenFood = null;
+        spawnRegularFood();
+        
+        updateFSUI();
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            if (gameActive && snakeGameRunning && isFullscreenActive) {
+                timeLeft--;
+                updateFSUI();
+                if (timeLeft <= 0) gameOverFullscreen("TIME EXPIRED");
+            }
+        }, 1000);
+        
+        if (gameLoopId) cancelAnimationFrame(gameLoopId);
+        function gameLoop(timestamp) {
+            if (!snakeGameRunning || !isFullscreenActive) return;
+            if (!gameActive) { gameLoopId = requestAnimationFrame(gameLoop); return; }
+            if (!window._fsLastTimestamp) window._fsLastTimestamp = timestamp;
+            if (timestamp - window._fsLastTimestamp > gameSpeed) {
+                window._fsLastTimestamp = timestamp;
+                updateFullscreenLogic();
+            }
+            drawFullscreen();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+        window._fsLastTimestamp = 0;
+        gameLoopId = requestAnimationFrame(gameLoop);
+    }
+    
+    function spawnRegularFood() {
+        const x = Math.floor(Math.random() * (fsCanvas.width/grid)) * grid;
+        const y = Math.floor(Math.random() * (fsCanvas.height/grid)) * grid;
+        food = {x, y};
+    }
+    
+    function spawnGoldenFood() {
+        const x = Math.floor(Math.random() * (fsCanvas.width/grid)) * grid;
+        const y = Math.floor(Math.random() * (fsCanvas.height/grid)) * grid;
+        goldenFood = {x, y, timer: 100};
+    }
+    
+    function updateFullscreenLogic() {
+        if (!gameActive) return;
+        direction = nextDir;
+        const head = {x: snake[0].x, y: snake[0].y};
+        if (direction === 'UP') head.y -= grid;
+        if (direction === 'DOWN') head.y += grid;
+        if (direction === 'LEFT') head.x -= grid;
+        if (direction === 'RIGHT') head.x += grid;
+        if (head.x < 0) head.x = fsCanvas.width - grid;
+        if (head.x >= fsCanvas.width) head.x = 0;
+        if (head.y < 0) head.y = fsCanvas.height - grid;
+        if (head.y >= fsCanvas.height) head.y = 0;
+        if (snake.some(p => p.x === head.x && p.y === head.y)) { gameOverFullscreen("CRASHED!"); return; }
+        snake.unshift(head);
+        let ate = false;
+        if (head.x === food.x && head.y === food.y) {
+            score += 10;
+            timeLeft = Math.min(timeLeft + 2, 99);
+            createParticlesFS(food.x, food.y, '#4ade80');
+            spawnRegularFood();
+            ate = true;
+            if (score % 50 === 0 && level < 15) { level++; gameSpeed = Math.max(70, gameSpeed - 8); spawnGoldenFood(); }
+        } else if (goldenFood && head.x === goldenFood.x && head.y === goldenFood.y) {
+            score += 50;
+            timeLeft = Math.min(timeLeft + 5, 99);
+            createParticlesFS(goldenFood.x, goldenFood.y, '#fbbf24');
+            goldenFood = null;
+            ate = true;
+        }
+        if (!ate) snake.pop();
+        if (goldenFood) { goldenFood.timer--; if (goldenFood.timer <= 0) goldenFood = null; }
+        updateFSUI();
+    }
+    
+    function createParticlesFS(x, y, color) {
+        for(let i=0;i<10;i++) particles.push({ x, y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*4, life: 1, color });
+    }
+    
+    function drawFullscreen() {
+        fsCtx.fillStyle = '#080c14';
+        fsCtx.fillRect(0, 0, fsCanvas.width, fsCanvas.height);
+        fsCtx.fillStyle = '#ff0055';
+        fsCtx.shadowBlur = 6; fsCtx.shadowColor = '#ff0055';
+        fsCtx.beginPath(); fsCtx.arc(food.x+8, food.y+8, 6, 0, Math.PI*2); fsCtx.fill();
+        if(goldenFood) {
+            fsCtx.fillStyle = '#ffcc00'; fsCtx.shadowColor = '#ffcc00';
+            fsCtx.beginPath(); fsCtx.arc(goldenFood.x+8, goldenFood.y+8, 8, 0, Math.PI*2); fsCtx.fill();
+        }
+        fsCtx.shadowBlur = 0;
+        snake.forEach((p,i) => {
+            fsCtx.fillStyle = i===0 ? '#00ff88' : '#1a7f4a';
+            fsCtx.beginPath(); 
+            fsCtx.roundRect(p.x+1, p.y+1, grid-2, grid-2, i===0?6:3);
+            fsCtx.fill();
+            if(i===0){ fsCtx.fillStyle = 'white'; fsCtx.fillRect(p.x+4, p.y+4, 3, 3); fsCtx.fillRect(p.x+10, p.y+4, 3, 3); }
+        });
+        particles.forEach((p,i) => { p.x+=p.vx; p.y+=p.vy; p.life-=0.02; fsCtx.fillStyle=p.color; fsCtx.globalAlpha=p.life; fsCtx.fillRect(p.x, p.y, 3,3); if(p.life<=0) particles.splice(i,1); });
+        fsCtx.globalAlpha=1;
+    }
+    
+    async function updateFSUI() {
+        document.getElementById('fsScore').innerText = score;
+        document.getElementById('fsLevel').innerText = level;
+        document.getElementById('fsTimer').innerText = timeLeft + "s";
+        let best = globalBestScore;
+        if(score > best) best = score;
+        document.getElementById('fsHighScore').innerText = best;
+    }
+    
+    async function gameOverFullscreen(msg) {
+        if(!gameActive) return;
+        gameActive = false;
+        snakeGameRunning = false;
+        if(countdownInterval) clearInterval(countdownInterval);
+        if(gameLoopId) cancelAnimationFrame(gameLoopId);
+        const finalScore = score;
+        const scoreRef = ref(db, `leaderboard/${MY_ID}`);
+        const snap = await get(scoreRef);
+        const best = (snap.val() && snap.val().score) ? snap.val().score : 0;
+        if (finalScore > best) await set(scoreRef, { uid: MY_ID, score: finalScore });
+        await set(ref(db, `userLogs/${MY_ID}`), { uid: MY_ID, score: finalScore, duration: ADMIN_SETTINGS.gameDuration, game: "Snake", timestamp: new Date().toLocaleString() });
+        document.getElementById('myBest').innerText = finalScore > best ? finalScore : best;
+        globalBestScore = finalScore > best ? finalScore : best;
+        alert(`${msg}\n🐍 Final Score: ${finalScore}`);
+        closeFullscreenGame();
+        checkAppStatus();
+    }
+    
+    // Swipe Detection
+    let touchStart = null;
+    function handleTouchStart(e) {
+        e.preventDefault();
+        const rect = fsCanvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        touchStart = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    }
+    function handleTouchMove(e) {
+        if (!gameActive || !snakeGameRunning) return;
+        e.preventDefault();
+        if (!touchStart) return;
+        const rect = fsCanvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        const currentX = touch.clientX - rect.left;
+        const currentY = touch.clientY - rect.top;
+        const diffX = currentX - touchStart.x;
+        const diffY = currentY - touchStart.y;
+        if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+            if (diffX > 0 && direction !== 'LEFT') nextDir = 'RIGHT';
+            else if (diffX < 0 && direction !== 'RIGHT') nextDir = 'LEFT';
+        } else {
+            if (diffY > 0 && direction !== 'UP') nextDir = 'DOWN';
+            else if (diffY < 0 && direction !== 'DOWN') nextDir = 'UP';
+        }
+        touchStart = { x: currentX, y: currentY };
+    }
+    function handleTouchEnd(e) { touchStart = null; }
+    
+    function openFullscreenGame() {
+        if (snakeGameRunning) {
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            if (countdownInterval) clearInterval(countdownInterval);
+        }
+        snakeGameRunning = false;
+        isFullscreenActive = true;
+        document.getElementById('fullscreenGame').classList.add('active');
+        initFullscreenGame();
+        fsCanvas.addEventListener('touchstart', handleTouchStart, {passive: false});
+        fsCanvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+        fsCanvas.addEventListener('touchend', handleTouchEnd);
+    }
+    
+    function closeFullscreenGame() {
+        isFullscreenActive = false;
+        snakeGameRunning = false;
+        if (countdownInterval) clearInterval(countdownInterval);
+        if (gameLoopId) cancelAnimationFrame(gameLoopId);
+        document.getElementById('fullscreenGame').classList.remove('active');
+        fsCanvas.removeEventListener('touchstart', handleTouchStart);
+        fsCanvas.removeEventListener('touchmove', handleTouchMove);
+        fsCanvas.removeEventListener('touchend', handleTouchEnd);
+    }
+    
+    document.getElementById('exitFullscreenBtn').onclick = () => {
+        if(snakeGameRunning && gameActive) gameOverFullscreen("Game exited");
+        else closeFullscreenGame();
+    };
+    
+    window.startFullscreenGameWrapper = () => {
+        if (snakeGameRunning && isFullscreenActive) return;
+        openFullscreenGame();
+    };
+    document.getElementById('gameBtn').onclick = startFullscreenGameWrapper;
+    
+    // ==================== FIREBASE INTEGRATION ====================
+    function showCopyToast(msg) { const t=document.createElement('div'); t.className='copy-toast'; t.innerHTML=`<i class="fas fa-copy"></i> ${msg}`; document.body.appendChild(t); setTimeout(()=>t.remove(),1500); }
+    function attachOneClickCopy() { 
+        document.getElementById('giftContainer').addEventListener('click',(e)=>{ 
+            let card=e.target.closest('.gift-card'); 
+            if(card){ 
+                let code=card.querySelector('.copy-code-text')?.getAttribute('data-code')||card.querySelector('.copy-code-text')?.innerText; 
+                if(code){ navigator.clipboard.writeText(code); showCopyToast(`✅ "${code}" copied`); } 
+            } 
+        }); 
+    }
+
+    onValue(ref(db, 'settings'), (snap) => {
+        const data = snap.val() || {};
+        ADMIN_SETTINGS = {...ADMIN_SETTINGS, ...data};
+        document.getElementById('openTimeText').innerText = data.openTime || "00:00";
+        document.getElementById('closeTimeText').innerText = data.closeTime || "23:59";
+        if(data.forceLogoutKey && data.forceLogoutKey != localStorage.getItem("lastLogoutKey")) { 
+            localStorage.setItem("lastLogoutKey", data.forceLogoutKey); 
+            logout(); 
+        }
+        checkAppStatus();
+    });
+    
+    function updateMilestonesUI(userCount) {
+        const ms = ADMIN_SETTINGS.milestones || {};
+        const body = document.getElementById('milestoneBody');
+        body.innerHTML = '';
+        let currentUnlocked = 0;
+        Object.keys(ms).sort((a,b)=>Number(a)-Number(b)).forEach(target => {
+            const reached = userCount >= parseInt(target);
+            if(reached) currentUnlocked = ms[target].wins;
+            body.innerHTML += `<tr style="background:${reached ? '#0f2b1f30' : 'transparent'}"><td> ${target} users ${reached ? '✅' : ''} </td><td> ${ms[target].wins} winners </td><td> ₹${ms[target].price} </td></tr>`;
+        });
+        document.getElementById('currentStatus').innerHTML = `<i class="fas fa-crown"></i> ${currentUnlocked} Winners Unlocked <i class="fas fa-gem"></i>`;
+    }
+
+    function initDataSync() {
+        onValue(ref(db, 'leaderboard'), (snap) => {
+            const data = snap.val() || {};
+            const users = Object.values(data).sort((a,b)=>b.score - a.score);
+            document.getElementById('totalUserCount').innerText = users.length;
+            updateMilestonesUI(users.length);
+            const winnersLimit = (ADMIN_SETTINGS.milestones && Object.values(ADMIN_SETTINGS.milestones).reduce((acc, cur, idx, arr) => users.length >= Object.keys(ADMIN_SETTINGS.milestones||{})[idx] ? cur.wins : acc, 0)) || 0;
+            const listDiv = document.getElementById('leaderList');
+            listDiv.innerHTML = '';
+            users.slice(0, ADMIN_SETTINGS.showLimit || 200).forEach((u, idx) => {
+                const rank = idx+1;
+                const isWinner = rank <= winnersLimit;
+                const highlight = u.uid === MY_ID ? 'style="background: linear-gradient(95deg,#fbbf2420,#2a1e0a); border-left:4px solid #fbbf24;"' : '';
+                listDiv.innerHTML += `<div class="leader-item" ${highlight}><div style="display:flex; justify-content:space-between;"><span><strong>#${rank}</strong> ${u.uid === MY_ID ? '🔥 YOU' : (u.uid || "user").slice(0,12)}</span><span><span class="prize-tag ${isWinner ? 'tag-win' : 'tag-lock'}">${isWinner ? '₹'+ADMIN_SETTINGS.winAmount : 'locked'}</span> <span style="color:#4ade80;">${u.score}</span></span></div></div>`;
+                if(u.uid === MY_ID) { document.getElementById('myBest').innerText = u.score; globalBestScore = u.score; }
+            });
+        });
+        onValue(ref(db, `gifts/${MY_ID}`), (snap) => {
+            const gifts = snap.val();
+            const container = document.getElementById('giftContainer');
+            if(!gifts || Object.keys(gifts).length === 0) { container.innerHTML = "<div style='padding:24px; text-align:center;'>🎁 No rewards yet.<br><small>Win rank prizes after session ends</small></div>"; return; }
+            container.innerHTML = Object.values(gifts).map(g => `<div class="gift-card" data-code="${g.code}"><i class="fas fa-ticket-alt"></i><div>🎁 REWARD ₹${g.amount}</div><div class="code-block"><span class="copy-code-text" data-code="${g.code}">${g.code}</span> <i class="fas fa-copy"></i></div><div class="click-hint">📋 Click card → copy</div></div>`).join('');
+            attachOneClickCopy();
+        });
+    }
+
+    function checkAppStatus() {
+        const now = new Date();
+        const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+        const closed = timeStr < ADMIN_SETTINGS.openTime || timeStr > ADMIN_SETTINGS.closeTime;
+        document.getElementById('statusBanner').style.display = closed ? 'flex' : 'none';
+        const btn = document.getElementById('gameBtn');
+        if(closed && btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-ban"></i> SESSION CLOSED'; }
+        else if(btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-expand-alt"></i> START FULLSCREEN GAME'; }
+    }
+
+    window.logout = () => { localStorage.removeItem("isLoggedIn"); location.reload(); };
+    window.showTab = (id, el) => {
+        document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        el.classList.add('active');
+    };
+    
+    // AUTO LOGIN: always true because login page removed
+    localStorage.setItem("isLoggedIn", "true");
+    document.getElementById('mainApp').classList.remove('hidden');
+    document.getElementById('bottomNav').classList.remove('hidden');
+    document.getElementById('myUID').innerText = MY_ID;
+    initDataSync();
+    setInterval(checkAppStatus, 3000);
+    checkAppStatus();
+    
+    if (!window.CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) { if (w < 2 * r) r = w / 2; if (h < 2 * r) r = h / 2; this.moveTo(x+r, y); this.lineTo(x+w-r, y); this.quadraticCurveTo(x+w, y, x+w, y+r); this.lineTo(x+w, y+h-r); this.quadraticCurveTo(x+w, y+h, x+w-r, y+h); this.lineTo(x+r, y+h); this.quadraticCurveTo(x, y+h, x, y+h-r); this.lineTo(x, y+r); this.quadraticCurveTo(x, y, x+r, y); return this; };
+    }
+</script>
+</body>
+                                                                                                                                                 </html>
